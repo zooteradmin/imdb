@@ -4,12 +4,15 @@ from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import permissions
+from api.permissions import IsAdminOrReadOnly
 
 
 class MovieList(APIView):
   """
   List all movies or create a new movie
   """
+  permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser,)
   def get(self, request, format=None):
     movies = Movie.objects.all()
     serializer = MovieSerializer(movies, many=True)
@@ -26,6 +29,7 @@ class MovieDetail(APIView):
   """
   Retrive, update or delete a snippet instance
   """
+  permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser,)
   def get_object(self, pk):
     try:
       return Movie.objects.get(pk=pk)
