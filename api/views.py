@@ -5,14 +5,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import permissions
+from django.db.models import Q
+from api.permissions import IsAuthenticatedAndIsAdminOrReadOnly
 
 
 class MovieList(APIView):
   """
   List all movies or create a new movie
   """
-  permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser,)
+  permission_classes = (IsAuthenticatedAndIsAdminOrReadOnly, )
   def get(self, request, format=None):
+    print request.user.is_superuser
+    print request.user.is_authenticated()
     movies = Movie.objects.all()
     serializer = MovieSerializer(movies, many=True)
     return Response(serializer.data)
@@ -28,7 +32,7 @@ class MovieDetail(APIView):
   """
   Retrive, update or delete a snippet instance
   """
-  permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser,)
+  permission_classes = (IsAuthenticatedAndIsAdminOrReadOnly, )
   def get_object(self, pk):
     try:
       return Movie.objects.get(pk=pk)
@@ -52,3 +56,14 @@ class MovieDetail(APIView):
     movie = self.get_object(pk)
     movie.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MovieSearch(APIView):
+  """
+  Search for movies
+  """
+  def post(self, request, format=None):
+    search_term = request.data.pop('query')
+    movies = Movie.objects.filter(Q(name__icontains=search_term) | Q(director__name__icontains=search_term))[:10]
+    serializer = MovieSerializer(movies, many=True)
+    return Response(serializer.data)
